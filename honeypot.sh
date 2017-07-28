@@ -26,12 +26,10 @@ if [ $PORT == '22' ]
 then
 	if [ $ACTION == 'enable' ]
 	then
-		uci add_list updater.pkglists.lists='i_agree_honeypot'
+		/etc/init.d/mitmproxy_wrapper start
 	else
-		uci del_list updater.pkglists.lists='i_agree_honeypot'
+		/etc/init.d/mitmproxy_wrapper stop
 	fi
-	#save changes
-	updater.sh
 else
 	X=$PORT$PROTOCOL
 	if [ $ACTION == 'enable' ]
@@ -41,6 +39,5 @@ else
 		uci add_list ucollect.fakes.disable=$X
 	fi
 	uci commit ucollect
-
 fi
 echo "$ACTION HP on port $PORT"
