@@ -25,6 +25,7 @@ import sys
 import argparse
 import operator
 import random
+import re
 
 class defender():
     """
@@ -55,6 +56,7 @@ class defender():
         #print 'Production ports: {}'.format(self.defenders_actions.keys())
         #print 'Honeypot ports: {}'.format(self.defenders_actions.values())
 
+   
     def get_honeypot_ports(self, production_ports,debug=0):
         """
         Get the production ports and return the honeyport port according to the probabilities 
@@ -64,6 +66,7 @@ class defender():
             # We have it
             sorted_current_honeypot_dict = sorted(current_honeypot_dict.items(), key=operator.itemgetter(1))
             # The format of this last dict is something like this [('443', ' 0.08561247571157425'), ('21', ' 0.27429543264914535'), ('8080', ' 0.287672382290513'), ('80', ' 0.35241970934876826')]
+            print sorted_current_honeypot_dict
             probability = random.uniform(0, 1)
             if debug > 3:
                 print 'Random Number: {}'.format(probability)
@@ -92,47 +95,20 @@ def read_data(file, NewDefender, debug=0):
         if '#' in line or 'defen' in line:
             line = f.readline()
             continue
-        parts = line.strip().split(',')
-        defenders_utility = parts[-1]
-        attacker_action_probability = parts[-2]
-        attacker_action = parts[-3]
-        defender_action_probability = parts[-4]
-        defender_action_temp = parts[0:-4]
-        defender_action = ''
-        
-        # Defender action processing
-        for i in defender_action_temp:
-            defender_action += i
-        # Get the defenders actions production ports. N[1026, 1028]:D[1755]
-        # This is complex, but we need a string of the ordered ports (ordered as numeric)
-        p_temp1 = defender_action.split(']:D[')[0].split('[')[1]
-        p_temp2 = map(str,sorted(map(int, p_temp1.split()) , reverse=False))
-        production_ports = ','.join(p_temp2)
-        if debug > 2:
-            print '\tProduction ports: {}'.format(production_ports)
-        # Get the defenders honeyport ports. Now there is only 1 honeyport port, but in the future can be more... this should work anyway
-        h_temp1 = defender_action.split(']:D[')[1].split(']')[0]
-        h_temp2 = map(str,sorted(map(int, h_temp1.split()) , reverse=False))
-        honeypot_ports = ','.join(h_temp2)
-        if debug > 2:
-            print '\tHoneypot ports: {}'.format(honeypot_ports)
+        #prepare 
+        nature_pattern = re.compile("(?<=N\[)(.*?)(?=\])")
+        defender_pattern = re.compile("(?<=D\[)(.*?)(?=\])")
+
+
+        production_ports =  nature_pattern.findall(line)[0]
+        honeypot_ports =  defender_pattern.findall(line)[0]
+        probability =  line.split("], ")[1].split(',')[0]
 
         # Store them in the dict
-        NewDefender.store(production_ports, honeypot_ports, defender_action_probability)
+        NewDefender.store(production_ports, honeypot_ports, probability)
 
-        if debug:
-            NewDefender.print_info()
-
-        # Optional printing
-        if debug > 1:
-            print '\tDefender action: {}'.format(defender_action)
-            print '\tDefender action prob: {}'.format(defender_action_probability)
-            print '\tAttacker action: {}'.format(attacker_action)
-            print '\tAttacker action prob: {}'.format(attacker_action_probability)
-            print '\tDefenders utility: {}'.format(defenders_utility)
+        #read next line
         line = f.readline()
-
-
 
 def get_strategy(production_ports, strategy_file):
     NewDefender = defender()
@@ -142,7 +118,6 @@ def get_strategy(production_ports, strategy_file):
         return ret.split(',')
     else:
         return ret
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Tells you which honeypot port to open given your production ports.')
@@ -167,14 +142,13 @@ if __name__ == '__main__':
         temp_production_ports = args.ports
     try:
         production_ports = ','.join(map(str, sorted(map(int, temp_production_ports.split(',')), reverse=False)))
-        pr
     except ValueError:
         print 'Sorry, only integers for the ports'
         sys.exit()
 
     # Get the honeyport port
     honeypot_port = NewDefender.get_honeypot_ports(production_ports,args.debug)
-    print 'The honeypot port selecte for you is: {}'.format(honeypot_port)
+    print 'The honeypot port selected for you is: {}'.format(honeypot_port)
 
 
 
