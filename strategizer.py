@@ -27,17 +27,40 @@ import argparse
 import json
 import subprocess
 
+known_honeypots=['22', '23', '8080', '2323', '80', '3128', '8123']
 
-def open_HP_on_port(port):
-	print "\tOpening HP in port: {}".format(port)
-	result = subprocess.Popen('bash Strategizer/honeypot.sh -e -p '+str(port), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
 
-def close_HP_on_port(port):
+def open_honeypot(port, known_honeypots, protocol='tcp'):
+    if port in known_honeypots:
+        #ssh HP
+        if port == '22':
+            command = '/etc/init.d/mitmproxy_wrapper start'
+        #minipot
+        else:
+            command = 'uci del_list ucollect.fakes.enable='+port+protocol
+    #no, use TARPIT
+    else:
+        command = 'iptables -I zone_wan_input 6 -p tcp --dport %s -j TARPIT' % port
+    subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+    print "\tOpening HP in port: {}".format(port)
+
+def close_honeypot(port,known_honeypots, protocol='tcp'):
+    if port in known_honeypots:
+            #ssh HP
+            if port == '22':
+                command = '/etc/init.d/mitmproxy_wrapper stop'
+            #minipot
+            else:
+                command = 'uci del_list ucollect.fakes.disable='+port+protocol
+        #no, use TARPIT
+    else:
+        command = 'iptables -D zone_wan_input 6'
+    subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
     print "\tClosing HP in port: {}".format(port)
-    result = subprocess.Popen('bash Strategizer/honeypot.sh -d -p '+str(port), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
 
 def get_strategy(ports, active_honeypots):
     print "\tUser is using port(s): " + str(ports)
+    print "\tActive HP: {}".format(active_honeypots)
     #get ports for HP from strategy
     
     #build the string
@@ -53,15 +76,15 @@ def get_strategy(ports, active_honeypots):
     #print suggested_honeypots
     print "\tSuggested port(s) for HP: " + str(suggested_honeypots)
     #close previously opened HP which we do not want anymore
-    for port in [x for x in active_honeypots if x not in suggested_honeypots]:
-        close_HP_on_port(port)
-
+    for port in active_honeypots:
+        if port not in suggested_honeypots:
+            close_honeypot(port, known_honeypots)
+        else:
+            print "\t{} already open".format(port)
     #open the Honeypots on suggested ports
-    try:
-        for port in suggested_honeypots:
-            open_HP_on_port(port)
-    except TypeError:
-        pass
+    for port in suggested_honeypots:
+        if port not in active_honeypots:
+            open_honeypot(port,known_honeypots)
 
 if __name__ == '__main__':
     """parser = argparse.ArgumentParser(description='Tells you which honeypot port to open given your production ports.')

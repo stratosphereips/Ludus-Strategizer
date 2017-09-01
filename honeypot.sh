@@ -5,6 +5,7 @@
 ACTION=
 PORT=
 PROTOCOL="tcp"
+MINIPOTS=
 #get action
 if [ $1 == '-e' ] || [ $1 == '--enable' ] 
 then
@@ -22,22 +23,27 @@ then
 fi
 
 #action with SSH HP?
-if [ $PORT == '22' ]
-then
-	if [ $ACTION == 'enable' ]
+if [[ condition ]]; then
+
+	if [ $PORT == '22' ]
 	then
-		/etc/init.d/mitmproxy_wrapper start
+		if [ $ACTION == 'enable' ]
+		then
+			/etc/init.d/mitmproxy_wrapper start
+		else
+			/etc/init.d/mitmproxy_wrapper stop
+		fi
 	else
-		/etc/init.d/mitmproxy_wrapper stop
+		X=$PORT$PROTOCOL
+		if [ $ACTION == 'enable' ]
+		then
+			uci del_list ucollect.fakes.disable=$X
+		else
+			uci add_list ucollect.fakes.disable=$X
+		fi
+		uci commit ucollect
 	fi
 else
-	X=$PORT$PROTOCOL
-	if [ $ACTION == 'enable' ]
-	then
-		uci del_list ucollect.fakes.disable=$X
-	else
-		uci add_list ucollect.fakes.disable=$X
-	fi
-	uci commit ucollect
+	echo "TARPIT in port $PORT"
 fi
 echo "$ACTION HP on port $PORT"
