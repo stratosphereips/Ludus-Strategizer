@@ -66,7 +66,7 @@ class defender():
             # We have it
             sorted_current_honeypot_dict = sorted(current_honeypot_dict.items(), key=operator.itemgetter(1))
             # The format of this last dict is something like this [('443', ' 0.08561247571157425'), ('21', ' 0.27429543264914535'), ('8080', ' 0.287672382290513'), ('80', ' 0.35241970934876826')]
-            print sorted_current_honeypot_dict
+            #print sorted_current_honeypot_dict
             probability = random.uniform(0, 1)
             if debug > 3:
                 print 'Random Number: {}'.format(probability)
@@ -115,7 +115,7 @@ def get_strategy(production_ports, strategy_file):
     read_data(strategy_file, NewDefender,0)
     ret = NewDefender.get_honeypot_ports(production_ports)
     if ret:
-        return ret.split(',')
+        return ret.split(', ')
     else:
         return ret
 

@@ -29,12 +29,42 @@ import subprocess
 
 
 def open_HP_on_port(port):
-	print "Opening HP in port: {}".format(port)
-	result = subprocess.Popen('bash honeypot.sh -e -p '+str(port), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
-    print "Done"
+	print "\tOpening HP in port: {}".format(port)
+	result = subprocess.Popen('bash Strategizer/honeypot.sh -e -p '+str(port), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+
+def close_HP_on_port(port):
+    print "\tClosing HP in port: {}".format(port)
+    result = subprocess.Popen('bash Strategizer/honeypot.sh -d -p '+str(port), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
+
+def get_strategy(ports, active_honeypots):
+    print "\tUser is using port(s): " + str(ports)
+    #get ports for HP from strategy
+    
+    #build the string
+    ports_s = ''
+    for item in ports:
+        ports_s += (str(item)+',')
+    #get rid of the last comma
+    ports_s = ports_s[0:-1]
+    
+    #get strategy
+    suggested_honeypots = generator.get_strategy(ports_s,'Strategizer/strategies/2017-07-21-defenseStrategyWith2HP-zerosum-v1')
+
+    #print suggested_honeypots
+    print "\tSuggested port(s) for HP: " + str(suggested_honeypots)
+    #close previously opened HP which we do not want anymore
+    for port in [x for x in active_honeypots if x not in suggested_honeypots]:
+        close_HP_on_port(port)
+
+    #open the Honeypots on suggested ports
+    try:
+        for port in suggested_honeypots:
+            open_HP_on_port(port)
+    except TypeError:
+        pass
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Tells you which honeypot port to open given your production ports.')
+    """parser = argparse.ArgumentParser(description='Tells you which honeypot port to open given your production ports.')
 
     parser.add_argument('-f', '--file', type=str, help='Strategy file')
     parser.add_argument('-d', '--debug', type=int, help='Debug. From 0 to 10')
@@ -64,7 +94,8 @@ if __name__ == '__main__':
 	    for port in suggested_honeypots:
 	    	open_HP_on_port(port)
     except TypeError:
-	pass
+	pass"""
+    print get_strategy(['80'])
 
 
 
