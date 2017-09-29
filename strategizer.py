@@ -19,15 +19,12 @@
 # Sebastian Garcia  eldraco@gmail.com
 # Ondrej Lukas      ondrej.lukas95@gmail.com    
 
-# Description
-# A program that analyzes the firewall settings and opens honeypots based on the game theoretical strategy. 
+# Description. 
 
 import strategy_generator as generator
 import argparse
 import json
 import subprocess
-
-known_honeypots=['22', '23', '8080', '2323', '80', '3128', '8123']
 
 
 def open_honeypot(port, known_honeypots, protocol='tcp'):
@@ -58,9 +55,9 @@ def close_honeypot(port,known_honeypots, protocol='tcp'):
     subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE).communicate()
     print "\tClosing HP in port: {}".format(port)
 
-def get_strategy(ports, active_honeypots):
-    print "\tUser is using port(s): " + str(ports)
-    print "\tActive HP: {}".format(active_honeypots)
+def get_strategy(ports, active_honeypots, path_to_strategy):
+    #print "\tUser is using port(s): " + str(ports)
+    #print "\tActive HP: {}".format(active_honeypots)
     #get ports for HP from strategy
     
     #build the string
@@ -71,20 +68,8 @@ def get_strategy(ports, active_honeypots):
     ports_s = ports_s[0:-1]
     
     #get strategy
-    suggested_honeypots = generator.get_strategy(ports_s,'Strategizer/strategies/2017-07-21-defenseStrategyWith2HP-zerosum-v1')
-
-    #print suggested_honeypots
-    print "\tSuggested port(s) for HP: " + str(suggested_honeypots)
-    #close previously opened HP which we do not want anymore
-    for port in active_honeypots:
-        if port not in suggested_honeypots:
-            close_honeypot(port, known_honeypots)
-        else:
-            print "\t{} already open".format(port)
-    #open the Honeypots on suggested ports
-    for port in suggested_honeypots:
-        if port not in active_honeypots:
-            open_honeypot(port,known_honeypots)
+    suggested_honeypots = generator.get_strategy(ports_s,path_to_strategy)
+    return suggested_honeypots
 
 if __name__ == '__main__':
     """parser = argparse.ArgumentParser(description='Tells you which honeypot port to open given your production ports.')
